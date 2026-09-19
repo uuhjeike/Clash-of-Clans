@@ -1,0 +1,811 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Clash of Clans — Village Profile</title>
+<meta name="description" content="Clash of Clans player profile and post feed.">
+
+<!-- Fonts: a chunky game-style display face for the name/frame, and a clean rounded sans for everything else -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+
+<style>
+  :root{
+    --bg-deep:#160f0a;
+    --bg-deep-2:#1f150d;
+    --panel:#2b1d12;
+    --panel-edge:#472e18;
+    --wood:#3c2716;
+    --wood-light:#5a3a1f;
+    --stone:#4a4a42;
+    --stone-light:#6b6b5f;
+    --gold:#e8b34a;
+    --gold-bright:#ffd873;
+    --gold-dim:#a97f34;
+    --ember:#ff7a30;
+    --forest:#5c8a45;
+    --forest-dark:#3e5f2e;
+    --text-light:#f3e6cf;
+    --text-muted:#c9b79a;
+    --text-faint:#8f7a5f;
+    --radius-card:14px;
+    --shadow-deep:0 10px 30px rgba(0,0,0,.45);
+    --content-width:640px;
+  }
+
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    margin:0;
+    min-height:100vh;
+    background:
+      radial-gradient(ellipse 120% 60% at 50% -10%, #3a2412 0%, transparent 60%),
+      linear-gradient(180deg, var(--bg-deep-2) 0%, var(--bg-deep) 45%, #100b07 100%);
+    color:var(--text-light);
+    font-family:'Nunito', system-ui, sans-serif;
+    overflow-x:hidden;
+    position:relative;
+  }
+
+  a{color:inherit;}
+  img{max-width:100%;display:block;}
+
+  /* ---------------- Ambient background ---------------- */
+  .sky{
+    position:fixed;
+    inset:0;
+    z-index:0;
+    pointer-events:none;
+    overflow:hidden;
+  }
+  .sky::before{
+    /* distant war-camp silhouette line at the horizon */
+    content:"";
+    position:absolute;
+    left:0; right:0; bottom:0;
+    height:18vh;
+    background:linear-gradient(180deg, transparent 0%, rgba(10,7,4,.55) 55%, rgba(10,7,4,.85) 100%);
+  }
+  .cloud{
+    position:absolute;
+    border-radius:50%;
+    background:radial-gradient(circle at 30% 30%, rgba(255,235,200,.09), rgba(255,235,200,.02) 70%);
+    filter:blur(6px);
+    will-change:transform;
+  }
+  .cloud.c1{width:420px;height:140px;top:8%;left:-25%;animation:driftRight 95s linear infinite;}
+  .cloud.c2{width:320px;height:110px;top:18%;left:-40%;animation:driftRight 130s linear infinite;animation-delay:-30s;}
+  .cloud.c3{width:520px;height:170px;top:4%;left:-30%;animation:driftRight 160s linear infinite;animation-delay:-70s;opacity:.7;}
+
+  @keyframes driftRight{
+    from{transform:translateX(0);}
+    to{transform:translateX(160vw);}
+  }
+
+  .ember{
+    position:absolute;
+    bottom:-5vh;
+    width:5px;height:5px;
+    border-radius:50%;
+    background:radial-gradient(circle, var(--gold-bright) 0%, var(--ember) 55%, transparent 75%);
+    box-shadow:0 0 6px 1px rgba(255,150,60,.6);
+    opacity:0;
+    animation-name:rise;
+    animation-timing-function:ease-in;
+    animation-iteration-count:infinite;
+  }
+  @keyframes rise{
+    0%{transform:translate(0,0) scale(.6); opacity:0;}
+    8%{opacity:.9;}
+    100%{transform:translate(var(--drift,20px), -110vh) scale(1); opacity:0;}
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    .cloud, .ember{animation:none !important; display:none;}
+  }
+
+  /* ---------------- Layout shell ---------------- */
+  .wrap{
+    position:relative;
+    z-index:1;
+    max-width:var(--content-width);
+    margin:0 auto;
+    padding:32px 16px 80px;
+  }
+
+  /* ---------------- Profile header ---------------- */
+  .profile{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    text-align:center;
+    padding:36px 20px 28px;
+    margin-bottom:34px;
+    position:relative;
+    background:
+      linear-gradient(180deg, var(--panel) 0%, var(--bg-deep-2) 100%);
+    border:1px solid var(--panel-edge);
+    border-radius:18px;
+    box-shadow:var(--shadow-deep), inset 0 1px 0 rgba(255,255,255,.03);
+  }
+  /* carved corner rivets, like a clan-castle banner */
+  .profile::before, .profile::after,
+  .profile .rivet-bl, .profile .rivet-br{
+    content:"";
+    position:absolute;
+    width:9px;height:9px;
+    border-radius:50%;
+    background:radial-gradient(circle at 35% 30%, var(--gold-bright), var(--gold-dim) 70%);
+    box-shadow:0 1px 2px rgba(0,0,0,.6);
+  }
+  .profile::before{top:12px;left:12px;}
+  .profile::after{top:12px;right:12px;}
+  .profile .rivet-bl{bottom:12px;left:12px;}
+  .profile .rivet-br{bottom:12px;right:12px;}
+
+  .avatar-frame{
+    position:relative;
+    width:132px;height:132px;
+    border-radius:50%;
+    padding:6px;
+    background:conic-gradient(from 210deg, var(--gold-dim), var(--gold-bright), var(--gold), var(--gold-dim));
+    box-shadow:0 6px 18px rgba(0,0,0,.5), 0 0 0 1px rgba(0,0,0,.3);
+    margin-bottom:16px;
+  }
+  .avatar-frame .avatar-inner{
+    width:100%;height:100%;
+    border-radius:50%;
+    overflow:hidden;
+    background:var(--wood);
+    border:3px solid var(--bg-deep-2);
+    position:relative;
+  }
+  .avatar-inner img{
+    width:100%;height:100%;
+    object-fit:cover;
+    opacity:0;
+    position:relative;
+    z-index:1;
+    transition:opacity .5s ease;
+  }
+  .avatar-inner img.loaded{opacity:1;}
+  .avatar-inner .ph-shimmer{position:absolute;inset:0;z-index:0;}
+  .avatar-inner.done .ph-shimmer{display:none;}
+
+  .player-name{
+    font-family:'Lilita One', 'Nunito', sans-serif;
+    font-weight:400;
+    letter-spacing:.5px;
+    font-size:clamp(28px, 6vw, 36px);
+    color:var(--gold-bright);
+    text-shadow:0 2px 0 rgba(0,0,0,.55), 0 0 18px rgba(232,179,74,.25);
+    margin:0 0 8px;
+  }
+
+  .player-tag{
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    padding:6px 16px;
+    font-size:13px;
+    color:var(--text-muted);
+    background:rgba(0,0,0,.25);
+    border:1px solid var(--panel-edge);
+    border-radius:999px;
+    margin-bottom:14px;
+  }
+  .player-tag .dot{width:6px;height:6px;border-radius:50%;background:var(--forest);box-shadow:0 0 6px var(--forest);}
+
+  .player-bio{
+    max-width:420px;
+    font-size:15px;
+    line-height:1.6;
+    color:var(--text-muted);
+  }
+
+  /* ---------------- Feed ---------------- */
+  .feed-heading{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    margin:0 4px 16px;
+    color:var(--text-faint);
+    font-size:14px;
+  }
+  .feed-heading::after{
+    content:"";
+    flex:1;
+    height:1px;
+    background:linear-gradient(90deg, var(--panel-edge), transparent);
+  }
+
+  .post{
+    position:relative;
+    background:linear-gradient(180deg, var(--panel) 0%, #241708 100%);
+    border:1px solid var(--panel-edge);
+    border-radius:var(--radius-card);
+    padding:20px 20px 18px;
+    margin-bottom:18px;
+    box-shadow:var(--shadow-deep);
+    opacity:0;
+    transform:translateY(14px);
+    animation:postIn .5s ease forwards;
+  }
+  @media (prefers-reduced-motion: reduce){
+    .post{animation:none; opacity:1; transform:none;}
+  }
+  @keyframes postIn{
+    to{opacity:1; transform:translateY(0);}
+  }
+
+  .post::before{
+    /* small carved corner notch, top-left, echoing the profile frame */
+    content:"";
+    position:absolute;
+    top:0; left:18px;
+    width:26px; height:4px;
+    background:var(--gold-dim);
+    border-radius:0 0 4px 4px;
+    opacity:.65;
+  }
+
+  .post-text{
+    font-size:15.5px;
+    line-height:1.65;
+    color:var(--text-light);
+    margin:0 0 4px;
+    white-space:pre-line;
+  }
+  .post-text:not(:last-child){margin-bottom:12px;}
+
+  .post-media{
+    display:grid;
+    gap:8px;
+    margin:4px 0 12px;
+  }
+
+  .yt-embed{
+    position:relative;
+    width:100%;
+    aspect-ratio:16/9;
+    border-radius:10px;
+    overflow:hidden;
+    background:#000;
+    border:1px solid rgba(0,0,0,.4);
+    box-shadow:0 4px 14px rgba(0,0,0,.4);
+    margin:4px 0 12px;
+  }
+  .yt-embed iframe{
+    position:absolute;
+    inset:0;
+    width:100%;
+    height:100%;
+    border:0;
+  }
+  .post-media.count-1{grid-template-columns:1fr;}
+  .post-media.count-2{grid-template-columns:1fr 1fr;}
+  .post-media.count-3,.post-media.count-4{grid-template-columns:1fr 1fr;}
+
+  .media-box{
+    position:relative;
+    width:100%;
+    aspect-ratio:4/3;
+    border-radius:10px;
+    overflow:hidden;
+    background:var(--wood);
+    border:1px solid rgba(0,0,0,.4);
+    box-shadow:inset 0 0 0 1px rgba(255,255,255,.02);
+  }
+  .media-box img{
+    width:100%;height:100%;
+    object-fit:cover;
+    opacity:0;
+    transition:opacity .5s ease;
+  }
+  .media-box img.loaded{opacity:1;}
+
+  .ph-shimmer{
+    position:absolute;inset:0;
+    background:linear-gradient(100deg, #33220f 30%, #4a331a 50%, #33220f 70%);
+    background-size:220% 100%;
+    animation:shimmer 1.6s ease-in-out infinite;
+  }
+  @media (prefers-reduced-motion: reduce){
+    .ph-shimmer{animation:none;}
+  }
+  @keyframes shimmer{
+    0%{background-position:120% 0;}
+    100%{background-position:-20% 0;}
+  }
+  .media-box.done .ph-shimmer{display:none;}
+
+  .media-fallback{
+    position:absolute;inset:0;
+    display:none;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    gap:6px;
+    color:var(--text-faint);
+    font-size:12.5px;
+    text-align:center;
+    padding:10px;
+  }
+  .media-box.error .media-fallback{display:flex;}
+  .media-box.error .ph-shimmer{display:none;}
+  .media-fallback svg{opacity:.6;}
+
+  .post-link{
+    display:inline-flex;
+    align-items:center;
+    gap:9px;
+    padding:11px 18px;
+    font-family:'Nunito', sans-serif;
+    font-weight:800;
+    font-size:14.5px;
+    color:#20150a;
+    background:linear-gradient(180deg, var(--gold-bright) 0%, var(--gold) 55%, var(--gold-dim) 100%);
+    border-radius:10px;
+    text-decoration:none;
+    box-shadow:0 3px 0 #7a5a24, 0 6px 14px rgba(0,0,0,.35);
+    transition:transform .12s ease, box-shadow .12s ease;
+    border:1px solid rgba(255,255,255,.25);
+  }
+  .post-link:hover{transform:translateY(-1px);}
+  .post-link:active{transform:translateY(2px); box-shadow:0 1px 0 #7a5a24, 0 3px 8px rgba(0,0,0,.35);}
+
+  .post-link.army{
+    background:linear-gradient(180deg, #7fb469 0%, var(--forest) 55%, var(--forest-dark) 100%);
+    color:#0e1a0a;
+    box-shadow:0 3px 0 #2a4520, 0 6px 14px rgba(0,0,0,.35);
+  }
+  .post-link.army:active{box-shadow:0 1px 0 #2a4520, 0 3px 8px rgba(0,0,0,.35);}
+
+  .feed-end{
+    text-align:center;
+    padding:20px 0 4px;
+    color:var(--text-faint);
+    font-size:13px;
+  }
+
+  /* ---------------- Responsive ---------------- */
+  @media (max-width:480px){
+    .wrap{padding:20px 12px 60px;}
+    .profile{padding:28px 14px 22px;}
+    .avatar-frame{width:108px;height:108px;}
+    .player-name{font-size:26px;}
+    .post{padding:16px 15px 15px;}
+    .post-media.count-3,.post-media.count-4{grid-template-columns:1fr 1fr;}
+  }
+
+  :focus-visible{
+    outline:2px solid var(--gold-bright);
+    outline-offset:2px;
+  }
+</style>
+</head>
+<body>
+
+<div class="sky" aria-hidden="true">
+  <div class="cloud c1"></div>
+  <div class="cloud c2"></div>
+  <div class="cloud c3"></div>
+  <div id="embers"></div>
+</div>
+
+<main class="wrap">
+
+  <section class="profile">
+    <span class="rivet-bl"></span><span class="rivet-br"></span>
+    <div class="avatar-frame">
+      <div class="avatar-inner">
+        <div class="ph-shimmer"></div>
+        <img id="avatarImg" alt="Clash of Clans profile picture" loading="eager" fetchpriority="high">
+      </div>
+    </div>
+    <h1 class="player-name">Clash of Clans</h1>
+    <span class="player-tag"><span class="dot"></span>Village profile</span>
+    <p class="player-bio">Builder of villages, keeper of the war log. Posts from the base below.</p>
+  </section>
+
+  <div class="feed-heading">Recent activity</div>
+
+  <section id="feed" class="feed"></section>
+
+  <p class="feed-end">You've reached the end of the war log.</p>
+
+</main>
+
+<script>
+(function(){
+  "use strict";
+
+  /* ============================================================
+     1. RAW POST SOURCE
+     Add more posts later by pasting new blocks in exactly this
+     format, each one wrapped between two lines that contain only
+     a single "-" character:
+
+     -
+     optional text
+     an image URL
+     Link - (https://example.com)
+     -
+
+     A block can mix any number of text lines, image URLs, and
+     "Link - (...)" lines, in any order.
+  ============================================================ */
+  const POSTS_RAW = `
+-
+https://github.com/uuhjeike/Clash-of-Clans/blob/main/Post/All/1000/2ddb168741f67d0957d06d6b70a42ede.jpg
+-
+
+-
+Cool base layout  :⁠-⁠D
+https://github.com/uuhjeike/Clash-of-Clans/blob/main/Post/All/1000/Base/109123bf0fd9bdf6d1b719f63bed969a.jpg
+https://github.com/uuhjeike/Clash-of-Clans/blob/main/Post/All/1000/Base/1997bc02cbaa87c39fc6b491c9a722d3.jpg
+https://github.com/uuhjeike/Clash-of-Clans/blob/main/Post/All/1000/Base/5a2cba737bd009d0beb679154dd072ad.jpg
+https://github.com/uuhjeike/Clash-of-Clans/blob/main/Post/All/1000/Base/ff3965d5cb07ea87af3f4a27dcedebb1.jpg
+https://github.com/uuhjeike/Clash-of-Clans/blob/main/Post/All/1000/Base/568012c29f88e75e03ce488b03599760.jpg
+https://github.com/uuhjeike/Clash-of-Clans/blob/main/Post/All/1000/Base/9a3ae732644f48ee6a457992f2a0d9cf.jpg
+-
+
+-
+https://github.com/uuhjeike/Clash-of-Clans/blob/main/Post/All/1000/31e20345bab6307e78779bf6d4ec6019.jpg
+-
+
+-
+https://github.com/uuhjeike/Clash-of-Clans/blob/main/Post/All/1000/f0bfca41784ad9da599d65df56d27998.jpg
+-
+
+-
+https://github.com/uuhjeike/Clash-of-Clans/blob/main/Post/All/1000/145d497a580328258f336433e1e97a71.jpg
+-
+
+-
+https://github.com/uuhjeike/Clash-of-Clans/blob/main/Post/All/1000/3028dda5fd41b84d97224550e5d36b0c.jpg
+-
+
+-
+https://github.com/uuhjeike/Clash-of-Clans/blob/main/Post/All/1000/061eb61317e44c75f33a48e57caf4579.jpg
+-
+
+-
+https://github.com/uuhjeike/Clash-of-Clans/blob/main/Post/All/1000/0fb04832644805997888bb803f49ec6d.jpg
+-
+
+-
+https://github.com/uuhjeike/Clash-of-Clans/blob/main/Post/All/1000/27afa8c943e8732e897a0fbb827dfdb5.jpg
+-
+
+-
+https://github.com/uuhjeike/Clash-of-Clans/blob/main/Post/All/1000/34f9ffc113976a334d9ce8134bf320a1.jpg
+-
+
+-
+https://github.com/uuhjeike/Clash-of-Clans/blob/main/Post/All/1000/421394c853b5ab4383181730023b4594.jpg
+-
+
+-
+https://github.com/uuhjeike/Clash-of-Clans/blob/main/Post/All/1000/684c225faa789c1b0a9439d30b872d28.jpg
+-
+
+-
+https://github.com/uuhjeike/Clash-of-Clans/blob/main/Post/All/1000/8c9c2e7129bafd093d0b120b123f5502.jpg
+-
+
+-
+https://github.com/uuhjeike/Clash-of-Clans/blob/main/Post/All/1000/b166fbe3a73b0f06ec9e824b72469e89.jpg
+-
+
+-
+https://github.com/uuhjeike/Clash-of-Clans/blob/main/Post/All/1000/d0a9abf1d1d462ff824afe2087f41c96.jpg
+-
+
+-
+https://youtu.be/43zXEIynii8?si=bwNNx5I_pQqKyUzf
+-
+
+-
+https://github.com/uuhjeike/Clash-of-Clans/blob/main/Post/All/3738e845906ab8cd9948b055109ce95f.jpg
+-
+
+-
+https://github.com/uuhjeike/Clash-of-Clans/blob/main/Post/All/253ccee2b3f41dbd933f83e816cae1a0.jpg
+-
+
+-
+https://github.com/uuhjeike/Clash-of-Clans/blob/main/Post/16%20Separate%202026/1df433b7d9d6919636408077450c711b.jpg
+https://github.com/uuhjeike/Clash-of-Clans/blob/main/Post/16%20Separate%202026/9e33ea015cc8112c485f908719f2016f.jpg
+-
+
+-
+Link - (https://youtu.be/tW12HoQA1ZY?si=7c4TTlk4ctkqPjW7)
+-
+
+-
+https://github.com/uuhjeike/Clash-of-Clans/blob/main/Post/16%20Separate%202026/IMG_20260916_164455.jpg
+-
+
+-
+The best Army
+
+Link - (https://link.clashofclans.com/en?action=CopyArmy&army=h6e49_43-2m1p16e4_34-1p3e17_20-7p4e53_52i6x57-1x62-1x135d1x2-1x9u8x8-5x65-5x10-1x76-1x5-3x188s1x70-1x1-4x120-1x98-1x109)
+https://github.com/uuhjeike/Clash-of-Clans/blob/main/Post/16%20Separate%202026/IMG_20260916_163156.jpg
+-
+
+-
+https://github.com/uuhjeike/Clash-of-Clans/blob/main/Post/16%20Separate%202026/394bcc224de687837887b8d3b12d29ba.jpg
+-
+
+-
+https://github.com/uuhjeike/Clash-of-Clans/blob/main/profile%20photo.png
+-
+`;
+
+  const PROFILE_PHOTO = "https://github.com/uuhjeike/Clash-of-Clans/blob/main/profile%20photo.png";
+
+  /* ============================================================
+     2. HELPERS
+  ============================================================ */
+  function toRawGithub(url){
+    try{
+      const u = new URL(url);
+      if(u.hostname === "github.com" && u.pathname.includes("/blob/")){
+        const rawPath = u.pathname.replace("/blob/", "/");
+        return "https://raw.githubusercontent.com" + rawPath;
+      }
+    }catch(e){ /* not a valid absolute URL, leave as-is */ }
+    return url;
+  }
+
+  const IMAGE_EXT = /\.(png|jpe?g|webp|gif|svg)(\?.*)?$/i;
+  const LINK_LINE = /^Link\s*-\s*\((https?:\/\/[^\s)]+)\)\s*$/i;
+  const BARE_URL = /^https?:\/\/\S+$/i;
+  const YOUTUBE_RE = /^(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:watch\?v=|shorts\/|embed\/)([\w-]{11})|youtu\.be\/([\w-]{11}))/i;
+
+  function getYouTubeId(url){
+    const m = url.match(YOUTUBE_RE);
+    if(!m) return null;
+    return m[1] || m[2] || null;
+  }
+
+  function classifyLine(raw){
+    const line = raw.trim();
+    if(!line) return null;
+
+    const linkMatch = line.match(LINK_LINE);
+    if(linkMatch){
+      const url = linkMatch[1];
+      const ytId = getYouTubeId(url);
+      if(ytId) return { type:"youtube", id:ytId, url };
+      return { type:"link", url };
+    }
+    if(BARE_URL.test(line)){
+      const ytId = getYouTubeId(line);
+      if(ytId) return { type:"youtube", id:ytId, url:line };
+      if(IMAGE_EXT.test(line.split("?")[0])){
+        return { type:"image", url:toRawGithub(line) };
+      }
+      return { type:"link", url:line };
+    }
+    return { type:"text", value:line };
+  }
+
+  function parsePosts(raw){
+    // split into blocks delimited by standalone "-" lines
+    const lines = raw.split("\n");
+    const blocks = [];
+    let current = null;
+
+    for(const rawLine of lines){
+      if(rawLine.trim() === "-"){
+        if(current === null){
+          current = []; // opening delimiter
+        } else {
+          blocks.push(current); // closing delimiter
+          current = null;
+        }
+        continue;
+      }
+      if(current !== null){
+        current.push(rawLine);
+      }
+    }
+
+    return blocks
+      .map(blockLines => {
+        const items = blockLines.map(classifyLine).filter(Boolean);
+        if(items.length === 0) return null;
+
+        const images = items.filter(i => i.type === "image").map(i => i.url);
+        const links = items.filter(i => i.type === "link");
+        const videos = items.filter(i => i.type === "youtube");
+        const textLines = items.filter(i => i.type === "text").map(i => i.value);
+
+        return { images, links, videos, text: textLines.join("\n") };
+      })
+      .filter(Boolean);
+  }
+
+  function isArmyLink(url){
+    return /clashofclans\.com/i.test(url);
+  }
+
+  /* ============================================================
+     3. PROGRESSIVE IMAGE LOADING
+  ============================================================ */
+  function fallbackSVG(){
+    return '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">'+
+      '<path d="M21 15l-5-5L5 21"/><circle cx="8" cy="8" r="2"/>'+
+      '<rect x="3" y="3" width="18" height="18" rx="2"/></svg>';
+  }
+
+  function mountImage(box, img, url){
+    img.addEventListener("load", () => {
+      if(img.naturalWidth && img.naturalHeight){
+        box.style.aspectRatio = img.naturalWidth + " / " + img.naturalHeight;
+      }
+      img.classList.add("loaded");
+      box.classList.add("done");
+    });
+    img.addEventListener("error", () => {
+      box.classList.add("error");
+    });
+    img.src = url;
+  }
+
+  function buildLazyImage(url, alt, eager){
+    const box = document.createElement("div");
+    box.className = "media-box";
+
+    const shimmer = document.createElement("div");
+    shimmer.className = "ph-shimmer";
+    box.appendChild(shimmer);
+
+    const img = document.createElement("img");
+    img.alt = alt || "Post image";
+    img.loading = eager ? "eager" : "lazy";
+    img.decoding = "async";
+    box.appendChild(img);
+
+    const fb = document.createElement("div");
+    fb.className = "media-fallback";
+    fb.innerHTML = fallbackSVG() + "<span>Image unavailable</span>";
+    box.appendChild(fb);
+
+    if(eager){
+      mountImage(box, img, url);
+    } else if("IntersectionObserver" in window){
+      const io = new IntersectionObserver((entries, obs) => {
+        entries.forEach(entry => {
+          if(entry.isIntersecting){
+            mountImage(box, img, url);
+            obs.unobserve(entry.target);
+          }
+        });
+      }, { rootMargin: "200px 0px" });
+      io.observe(box);
+    } else {
+      mountImage(box, img, url);
+    }
+
+    return box;
+  }
+
+  /* ============================================================
+     4. RENDER
+  ============================================================ */
+  function renderPost(post, index){
+    const el = document.createElement("article");
+    el.className = "post";
+    el.style.animationDelay = Math.min(index * 60, 300) + "ms";
+
+    if(post.text){
+      const p = document.createElement("p");
+      p.className = "post-text";
+      p.textContent = post.text;
+      el.appendChild(p);
+    }
+
+    if(post.videos && post.videos.length){
+      post.videos.forEach(v => {
+        const wrap = document.createElement("div");
+        wrap.className = "yt-embed";
+        const iframe = document.createElement("iframe");
+        iframe.src = "https://www.youtube.com/embed/" + v.id;
+        iframe.title = "YouTube video player";
+        iframe.frameBorder = "0";
+        iframe.loading = "lazy";
+        iframe.allow = "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share";
+        iframe.referrerPolicy = "strict-origin-when-cross-origin";
+        iframe.allowFullscreen = true;
+        wrap.appendChild(iframe);
+        el.appendChild(wrap);
+      });
+    }
+
+    if(post.images.length){
+      const grid = document.createElement("div");
+      grid.className = "post-media count-" + Math.min(post.images.length, 4);
+      post.images.forEach((url, i) => {
+        // first post's first image loads eagerly for a fast first paint;
+        // everything else loads progressively as it scrolls into view
+        const eager = index === 0 && i === 0;
+        grid.appendChild(buildLazyImage(url, "Post image", eager));
+      });
+      el.appendChild(grid);
+    }
+
+    post.links.forEach(link => {
+      const a = document.createElement("a");
+      a.href = link.url;
+      a.target = "_blank";
+      a.rel = "noopener noreferrer";
+      a.className = "post-link" + (isArmyLink(link.url) ? " army" : "");
+      a.innerHTML = isArmyLink(link.url)
+        ? "⚔️ Open Army"
+        : "🔗 Open Link";
+      el.appendChild(a);
+    });
+
+    return el;
+  }
+
+  function init(){
+    // profile photo — eager, highest priority
+    const avatarImg = document.getElementById("avatarImg");
+    const avatarBox = avatarImg.closest(".avatar-inner");
+    avatarImg.addEventListener("load", () => {
+      avatarImg.classList.add("loaded");
+      avatarBox.classList.add("done");
+    });
+    avatarImg.addEventListener("error", () => {
+      avatarBox.style.background = "linear-gradient(160deg, var(--wood-light), var(--wood))";
+      avatarBox.classList.add("done");
+    });
+    avatarImg.src = toRawGithub(PROFILE_PHOTO);
+
+    // feed
+    const posts = parsePosts(POSTS_RAW);
+    const feed = document.getElementById("feed");
+    const frag = document.createDocumentFragment();
+    posts.forEach((post, i) => frag.appendChild(renderPost(post, i)));
+    feed.appendChild(frag);
+  }
+
+  /* ============================================================
+     5. AMBIENT EMBERS (lightweight, capped particle count)
+  ============================================================ */
+  function spawnEmbers(){
+    if(window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const host = document.getElementById("embers");
+    const count = window.innerWidth < 600 ? 10 : 16;
+    for(let i = 0; i < count; i++){
+      const e = document.createElement("div");
+      e.className = "ember";
+      const left = Math.random() * 100;
+      const duration = 9 + Math.random() * 8;
+      const delay = Math.random() * 14;
+      const drift = (Math.random() * 60 - 30) + "px";
+      e.style.left = left + "vw";
+      e.style.setProperty("--drift", drift);
+      e.style.animationDuration = duration + "s";
+      e.style.animationDelay = "-" + delay + "s";
+      host.appendChild(e);
+    }
+  }
+
+  if(document.readyState === "loading"){
+    document.addEventListener("DOMContentLoaded", () => { init(); spawnEmbers(); });
+  } else {
+    init();
+    spawnEmbers();
+  }
+})();
+</script>
+
+</body>
+</html>
