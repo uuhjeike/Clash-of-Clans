@@ -370,3 +370,24 @@
     outline:2px solid var(--gold-bright);
     outline-offset:2px;
   }
+
+
+/* ---------------- Direct video posts ---------------- */
+.video-embed{
+  width:100%;
+  margin:4px 0 14px;
+  overflow:hidden;
+  border-radius:10px;
+  background:#000;
+  border:1px solid rgba(0,0,0,.4);
+  box-shadow:0 4px 14px rgba(0,0,0,.4);
+}
+.video-embed video{
+  display:block;
+  width:100%;
+  max-height: min(75vh, 720px);
+  background:#000;
+  object-fit:contain;
+}
+.video-fallback{color:#f3e6cf;padding:12px;margin:0;font-size:13px;}
+.video-open-link{display:inline-block;padding:8px 12px;color:#ffd873;font-size:13px;text-decoration:underline;}

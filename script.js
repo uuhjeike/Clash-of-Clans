@@ -25,7 +25,8 @@
     return url;
   }
 
-  const IMAGE_EXT = /\.(png|jpe?g|webp|gif|svg)(\?.*)?$/i;
+  const IMAGE_EXT = /\.(png|jpe?g|webp|gif|svg|avif|bmp)(\?.*)?$/i;
+  const VIDEO_EXT = /\.(mp4|webm|ogv|ogg|m4v)(\?.*)?$/i;
   const LINK_LINE = /^Link\s*-\s*\((https?:\/\/[^\s)]+)\)\s*$/i;
   const BARE_URL = /^https?:\/\/\S+$/i;
   const YOUTUBE_RE = /^(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:watch\?v=|shorts\/|embed\/)([\w-]{11})|youtu\.be\/([\w-]{11}))/i;
@@ -45,11 +46,13 @@
       const url = linkMatch[1];
       const ytId = getYouTubeId(url);
       if(ytId) return { type:"youtube", id:ytId, url };
+      if(VIDEO_EXT.test(url.split("?")[0])) return { type:"video", url:toRawGithub(url) };
       return { type:"link", url };
     }
     if(BARE_URL.test(line)){
       const ytId = getYouTubeId(line);
       if(ytId) return { type:"youtube", id:ytId, url:line };
+      if(VIDEO_EXT.test(line.split("?")[0])) return { type:"video", url:toRawGithub(line) };
       if(IMAGE_EXT.test(line.split("?")[0])){
         return { type:"image", url:toRawGithub(line) };
       }
@@ -70,8 +73,9 @@
         const images = items.filter(i => i.type === "image").map(i => i.url);
         const links = items.filter(i => i.type === "link");
         const videos = items.filter(i => i.type === "youtube");
+        const directVideos = items.filter(i => i.type === "video").map(i => i.url);
         const textLines = items.filter(i => i.type === "text").map(i => i.value);
-        return { images, links, videos, text: textLines.join("\n") };
+        return { images, links, videos, directVideos, text: textLines.join("\n") };
       });
   }
 
@@ -168,6 +172,39 @@
         iframe.referrerPolicy = "strict-origin-when-cross-origin";
         iframe.allowFullscreen = true;
         wrap.appendChild(iframe);
+        el.appendChild(wrap);
+      });
+    }
+
+    // Direct video files (MP4/WebM/OGV) are rendered as playable video,
+    // not as ordinary external-link buttons. GitHub /blob/ URLs are converted
+    // to raw.githubusercontent.com URLs by classifyLine().
+    if(post.directVideos && post.directVideos.length){
+      post.directVideos.forEach((url, i) => {
+        const wrap = document.createElement("div");
+        wrap.className = "video-embed";
+        const video = document.createElement("video");
+        video.controls = true;
+        video.preload = "metadata";
+        video.playsInline = true;
+        video.setAttribute("aria-label", "Post video");
+        const source = document.createElement("source");
+        source.src = url;
+        const ext = (url.split("?")[0].match(/\.([a-z0-9]+)$/i) || [,"mp4"])[1].toLowerCase();
+        source.type = ext === "webm" ? "video/webm" : (ext === "ogv" || ext === "ogg") ? "video/ogg" : "video/mp4";
+        video.appendChild(source);
+        const fallback = document.createElement("p");
+        fallback.className = "video-fallback";
+        fallback.textContent = "This video could not be played. Open the original file.";
+        video.appendChild(fallback);
+        wrap.appendChild(video);
+        const link = document.createElement("a");
+        link.href = url;
+        link.target = "_blank";
+        link.rel = "noopener noreferrer";
+        link.className = "video-open-link";
+        link.textContent = "Open original video";
+        wrap.appendChild(link);
         el.appendChild(wrap);
       });
     }
